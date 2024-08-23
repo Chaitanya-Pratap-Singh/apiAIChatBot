@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application using Gemini</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f4f8;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 2rem;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            max-width: 500px;
+            height: 120px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: none;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .response {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            font-size: 1rem;
+            white-space: pre-wrap; /* Maintain formatting and wrap long lines */
+            overflow-wrap: break-word; /* Break long words to fit container */
+        }
+
+        .conversation {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #fff;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 10px;
+        }
+
+        .message.user {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .message.bot {
+            color: #333;
+        }
+
+        .typing-animation {
+            display: inline-block;
+            width: 30px;
+            height: 20px;
+            margin-left: 5px;
+        }
+
+        .typing-animation div {
+            width: 6px;
+            height: 6px;
+            margin: 0 2px;
+            background-color: #007bff;
+            border-radius: 50%;
+            display: inline-block;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-animation div:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-animation div:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.5);
+            }
+        }
+
+        .loading {
+            margin-top: 20px;
+            font-size: 1rem;
+            color: #333;
+            display: flex;
+            align-items: center;
+        }
+
+        .loading span {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chat Application using GPT</h1>
+    <textarea id="question" placeholder="Ask a question..."></textarea>
+    <button onclick="askQuestion()">Ask</button>
+    <div class="conversation" id="conversation"></div>
+    <div class="loading" id="loading" style="display: none;">
+        <div class="typing-animation">
+            <div></div>
+            <div></div>
+            <div></div>
+        </div>
+        <span>Bot is typing...</span>
+    </div>
+    <div class="response" id="response"></div>
+
+    <!-- Include marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <script>
+        const conversationDiv = document.getElementById('conversation');
+        const responseDiv = document.getElementById('response');
+        const loadingDiv = document.getElementById('loading');
+
+        async function askQuestion() {
+            const question = document.getElementById('question').value;
+
+            if (!question) {
+                responseDiv.textContent = 'Please enter a question.';
+                return;
+            }
+
+            // Display user's question in the conversation
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user';
+            userMessage.textContent = `You: ${question}`;
+            conversationDiv.appendChild(userMessage);
+
+            // Clear previous responses
+            responseDiv.textContent = '';
+            loadingDiv.style.display = 'flex';
+
+            try {
+                const response = await fetch('/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question }),
+                });
+
+                const data = await response.json();
+
+                // Hide loading animation
+                loadingDiv.style.display = 'none';
+
+                // Convert markdown to HTML and display bot's response
+                const botMessage = document.createElement('div');
+                botMessage.className = 'message bot';
+                botMessage.innerHTML = marked.parse(data.answer);
+                conversationDiv.appendChild(botMessage);
+
+                // Scroll to the bottom of the conversation
+                conversationDiv.scrollTop = conversationDiv.scrollHeight;
+            } catch (error) {
+                console.error('Error:', error);
+                responseDiv.textContent = 'An error occurred. Please try again.';
+                loadingDiv.style.display = 'none';
+            }
+
+            // Clear the question input
+            document.getElementById('question').value = '';
+        }
+    </script>
+</body>
+</html>
